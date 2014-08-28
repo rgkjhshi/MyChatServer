@@ -33,46 +33,13 @@
 
 __author__ = 'Michael King'
 
-import json
+
 from Package import *
 
-####################################################################################
-#协议解析
-####################################################################################
-class Protocol(object):
+class Handler(object):
 
-    def __init__(self , callback):
-        super(Protocol , self).__init__()
+    def __init__(self , connection):
+        super(Handler , self).__init__()
 
-        self._decode_callback = callback
+        self._connection = connection
 
-    @staticmethod
-    def checkPackage(data):
-
-        json_data = json.loads(data)
-
-        protocol = {
-                    'regisger'         :    RegisterPackage ,
-                    'login'            :    LoginPackage,
-                    'addfriendrequest' :    AddFriendRequestPackage,
-                    'deletefriend'     :    DeleteFriendPackage,
-                    'getroster'        :    GetRosterPackage,
-                    'getuserinfo'      :    GetUserInfoPackage,
-                    'chatmessage'      :    ChatMessagePackage,
-                    
-                    'addfriendstatus'  :    AddFriendStatusPackage,
-                    'error'            :    ErrorPackage,
-        }
-
-        action = json_data.get('action', "error")
-        # 组包
-        pack = protocol[action]()
-        pack.parser(json_data)
-        return pack
-
-
-    # 解析函数
-    def decode(self, data):
-        package = Protocol.checkPackage(data)
-        self._decode_callback(package)
-        

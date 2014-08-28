@@ -36,40 +36,36 @@ __author__ = 'Michael King'
 from tornado.tcpserver import TCPServer
 from tornado.ioloop  import IOLoop
 
-from Protocol import Protocol
+from Router import Router
 ######################################################################
 # 连接 
 ######################################################################
 class Connection(object):
-    r"""
-    参数中的stream为IOStream对象，有四个常用方法:
-    class IOStream(object):
-        def read_until(self, delimiter, callback): 
-        def read_bytes(self, num_bytes, callback, streaming_callback=None): 
-        def read_until_regex(self, regex, callback): 
-        def read_until_close(self, callback, streaming_callback=None): 
-        def write(self, data, callback=None):
-    """
     def __init__(self, stream, address):
         self._stream = stream
         self._address = address
         self._stream.set_close_callback(self.on_close)            # 继承自IOStream，连接关闭时的回调函数
-        self._protocol = Protocol(self.onPackageDecode)           # 数据包解析协议对象，参数为解析完成后的回调函数
         self.read_message()
-        print "A new user has entered the chat room.", address
 
     # 读取数据
     def read_message(self):
-        self._stream.read_until_regex(r'"end"\s*:\s*"end"\s*}', self.decode_message)  # 读取完指定内容后，自动解析
+        r"""
+        参数中的stream为IOStream对象，有四个常用方法:
+        class IOStream(object):
+            def read_until(self, delimiter, callback): 
+            def read_bytes(self, num_bytes, callback, streaming_callback=None): 
+            def read_until_regex(self, regex, callback): 
+            def read_until_close(self, callback, streaming_callback=None): 
+            def write(self, data, callback=None):
+        """
+        self._stream.read_until_regex(r'"end"\s*:\s*"end"\s*}', self.handle_message)  # 读取完指定内容后，交给处理函数
 
-    # 解析数据
-    def decode_message(self, data):
-        self._protocol.decode(data)            # decode之后会自动调用之前设置的回调函数进行下面的处理
-        # 继续读取内容
+    # 处理函数
+    def handle_message(self, data):
+        package = Router.decodePackage(data)
+        Router.routePackage(self , package)
+        # 处理完毕后，继续读取内容
         self.read_message()
-
-    def broadcast_messages(self, data):
-        print "User said:", data, self._address
 
     # 发送信息
     def send_message(self, data):
@@ -79,11 +75,6 @@ class Connection(object):
     def on_close(self):
         print "A user has left the chat room.", self._address
         self._stream.close()
-
-    def onPackageDecode(self , package):
-
-        print package
-        # Connection.logic.handlePackage(self , package)
 
 
 ######################################################################

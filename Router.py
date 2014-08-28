@@ -32,3 +32,44 @@
 #                  不见满街漂亮妹，哪个归得程序员？
 
 __author__ = 'Michael King'
+
+
+import json
+from Package import *
+from Handle import Handler
+
+class Router(object):
+
+    ####################################################################################
+    # 对愿数据进行解码
+    ####################################################################################
+    @staticmethod
+    def decodePackage(data):
+
+        json_data = json.loads(data)
+
+        protocol = {
+                    'regisger'         :    RegisterPackage ,
+                    'login'            :    LoginPackage,
+                    'addfriendrequest' :    AddFriendRequestPackage,
+                    'deletefriend'     :    DeleteFriendPackage,
+                    'getroster'        :    GetRosterPackage,
+                    'getuserinfo'      :    GetUserInfoPackage,
+                    'chatmessage'      :    ChatMessagePackage,
+                    
+                    'addfriendstatus'  :    AddFriendStatusPackage,
+                    'error'            :    ErrorPackage,
+        }
+
+        action = json_data.get('action', "error")
+        # 组包
+        pack = protocol[action]()
+        pack.parser(json_data)
+        return pack
+
+    ####################################################################################
+    # 包的分发路由
+    ####################################################################################
+    @staticmethod
+    def routePackage(connection , package):
+        print "from router: ", package
