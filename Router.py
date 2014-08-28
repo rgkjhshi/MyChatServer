@@ -51,13 +51,14 @@ class Router(object):
         protocol = {
                     'regisger'         :    RegisterPackage ,
                     'login'            :    LoginPackage,
-                    'addfriendrequest' :    AddFriendRequestPackage,
+                    'addfriendRequest' :    AddFriendRequestPackage,
+                    'addfriendResponse':    AddFriendResponsePackage,
                     'deletefriend'     :    DeleteFriendPackage,
                     'getroster'        :    GetRosterPackage,
                     'getuserinfo'      :    GetUserInfoPackage,
                     'chatmessage'      :    ChatMessagePackage,
                     
-                    'addfriendstatus'  :    AddFriendStatusPackage,
+                    'reply'            :    ReplyPackage,
                     'error'            :    ErrorPackage,
         }
 
@@ -68,8 +69,47 @@ class Router(object):
         return pack
 
     ####################################################################################
-    # 包的分发路由
+    # 包的分发路由表
     ####################################################################################
     @staticmethod
     def routePackage(connection , package):
-        print "from router: ", package
+
+        # Reply包
+        if isinstance(package, ReplyPackage):
+            # 添加好友的回应要单独处理
+            if isinstance(package, AddFriendRequestReplyPackage):
+                Handler(connection).addFriendRequestReplyHandler(package)
+
+            elif isinstance(package, AddFriendResponseReplyPackage):
+                Handler(connection).addFriendResponseReplyHandler(package)
+                
+            else :
+                Handler(connection).replyHandler(package)
+
+        # 正常的请求包
+        elif isinstance(package, RegisterPackage):
+            Handler(connection).registerHandler(package)
+
+        elif isinstance(package, LoginPackage):
+            Handler(connection).loginHandler(package)
+
+        elif isinstance(package, AddFriendRequestPackage):
+            Handler(connection).addFriendRequestHandler(package)
+
+        elif isinstance(package, AddFriendResponsePackage):
+            Handler(connection).addFriendResponseHandler(package)
+
+        elif isinstance(package, DeleteFriendPackage):
+            Handler(connection).deleteFriendHandler(package)
+
+        elif isinstance(package, GetRosterPackage):
+            Handler(connection).getRosterHandler(package)
+
+        elif isinstance(package, GetUserInfoPackage):
+            Handler(connection).getUserInfoHandler(package)
+
+        elif isinstance(package, ChatMessagePackage):
+            Handler(connection).chatMessageHandler(package)
+        # 错误的请求包
+        else :
+            Handler(connection).errorHandler(package)

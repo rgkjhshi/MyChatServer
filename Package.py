@@ -44,34 +44,20 @@ class Package(object):
 
     def __init__(self):
         self.action = ''
-        self.end = ''
+        self.end = 'end'
 
     def parser(self, datas):
-        for (k , v) in datas.items():
+        for (k , v) in datas.items():                                        # datas里的属性
             try:
-                if  type(self.__getattribute__(k)) is not types.NoneType:    # 得到自己已有的属性，然后重新赋值
+                if  type(self.__getattribute__(k)) is not types.NoneType:    # 若Package也有该属性并且不时None，则更新其值。
                     self.__setattr__(k, v)
-            except AttributeError:
-                pass
+            except AttributeError:                                           # 若没有该属性，抛出AttributeError，捕捉到之后不作处理
+                pass                                                         # 相当于有该属性则更新，没有则不处理
 
     def __str__(self):
         return "%s" % self.__dict__
-# 错误
-class ErrorPackage(Package):
-    """
-    {
-        "action"   : "error",
-        "username" : "tom@126.com",
-        "message"  : "404:not found"
-        "end"      : "end"
-    }
-    """
-    def __init__(self):
-        super(ErrorPackage, self).__init__()
 
-        self.username = ''
-        self.message  = ''
-
+# 普通请求包
 # 注册
 class RegisterPackage(Package):
     """
@@ -109,7 +95,7 @@ class LoginPackage(Package):
 class AddFriendRequestPackage(Package):
     """
     {
-        "action"     : "addfriendrequest",
+        "action"     : "addfriendRequest",
         "username"   : "michael@126.com",
         "friendname" : "tom@126.com",
         "message"    : "Hello!",
@@ -119,27 +105,29 @@ class AddFriendRequestPackage(Package):
     def __init__(self):
         super(AddFriendRequestPackage, self).__init__()
 
-        self.username = ''
-        self.friendname = ''
+        self.username = ''            # 发起人
+        self.friendname = ''          # 要加的人
         self.message = ''
 
-# 同意或者拒绝添加好友申请
-class AddFriendStatusPackage(Package):
+# 对好友请求的回应，这个包主要用在客户端
+class AddFriendResponsePackage(Package):
     """
     {
-        "action"     : "addfriendstatus",
+        "action"     : "addfriendResponse",
         "username"   : "michael@126.com",
         "friendname" : "tom@126.com",
-        "agree"      : 1,   or 0
+        "status"     : 0
+        "message"    : "Hello!",
         "end"        : "end"
     }
     """
     def __init__(self):
-        super(AddFriendStatusPackage , self).__init__()
+        super(AddFriendRequestPackage, self).__init__()
 
-        self.username = ''
-        self.friendname = ''
-        self.agree = 0
+        self.username = ''           # 申请的发起人
+        self.friendname = ''         # 回复的人
+        self.status = 0              # 是否同意用数字1和0表示，1表示同意，默认为0
+        self.message = ''
 
 # 删除好友
 class DeleteFriendPackage(Package):
@@ -158,7 +146,7 @@ class DeleteFriendPackage(Package):
         self.friendname = ''
 
 
-# 获取好友列表请求
+# 获取好友列表
 class GetRosterPackage(Package):
     """
     {
@@ -206,191 +194,148 @@ class ChatMessagePackage(Package):
 
 
 ####################################################################################
-#发送协议
+# 应答包协议
 ####################################################################################
-
-class ComplexEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if hasattr(obj,'reprJSON'):
-            return obj.reprJSON()
-        else:
-            return json.JSONEncoder.default(self, obj)
-
-
-
-class SendToClientPackageRegister(object):
-
-    def __init__(self):
-        pass
-
-
-class SendToClientPackageUser(object):
-
-    def __init__(self , uid, username , sex , description , online = False):
-
-        self.uid = uid
-        self.username = username
-        self.sex = sex
-        self.description = description
-        self.online = online
-
-
-    def reprJSON(self):
-
-        return dict(
-            uid = self.uid,
-            username = self.username,
-            sex = self.sex,
-            description = self.description,
-            online = self.online,
-        )
-
-
-
-class SendToClientAddFriend(object):
+# 错误
+class ErrorPackage(Package):
     """
-    添加好友，状态返回
+    {
+        "action"   : "error",
+        "username" : "tom@126.com",
+        "message"  : "404:not found"
+        "end"      : "end"
+    }
     """
     def __init__(self):
-        super(SendToClientAddFriend , self).__init__()
-        pass
+        super(ErrorPackage, self).__init__()
+
+        self.username = ''
+        self.message  = ''
 
 
-
-class SendToClientAddFriendStatusReuest(object):
+# 所有需要回应的包的父类
+class ReplyPackage(Package):
     """
-    添加好友状态返回
+    {
+        "action"   : "reply",
+        "type"     : "addFriend"
+        "status"   : 1
+        "message"  : ""
+        子类自行扩展...
+        "end"      : "end"
+    }
     """
+    def __init__(self):
+        super(ReplyPackage, self).__init__()
 
-    def __init__(self , fromid, toid, username , sex, description, agree):
-
-        self.fromid = fromid
-        self.toid = toid
-        self.username = username
-        self.sex = sex
-        self.description = description
-        self.agree = agree
-
-    def reprJSON(self):
-
-        return dict(
-
-            fromid = self.fromid,
-            toid = self.toid,
-
-            username = self.username,
-            sex = self.sex,
-            description = self.description,
-
-            agree = self.agree,
-
-        )
+        self.action = 'reply'
+        self.type = ''
+        self.status = 1    # 所有应答包，数字1表示正确，0表示错误，默认为1
+        self.message = ''
 
 
-
-class SendToClientPackageRecvAddFriendRequest(object):
+# 注册反馈
+class RegisterReplyPackage(ReplyPackage):
     """
-    发送有人申请添加消息
+    {
+        "action"   : "reply",
+        "type"     : "register"
+        "status"   : 1
+        "message" : ""
+        "end"      : "end"
+    }
     """
+    def __init__(self):
+        super(RegisterReplyPackage, self).__init__()
 
-    def __init__(self, fromid, username, toid, sex , description, msg, date):
+        self.type = 'register'
 
-        self.fromid = fromid
-        self.toid = toid
-
-        self.username = username
-        self.sex = sex
-        self.description = description
-
-        self.msg = msg
-        self.senddate = date
-
-    def reprJSON(self):
-
-        return dict(
-            fromid = self.fromid,
-            toid = self.toid,
-
-            username = self.username,
-            sex = self.sex,
-            description = self.description,
-
-            msg = self.msg,
-            senddate = self.senddate.strftime("%Y-%m-%d %H:%M:%S"),
-        )
-
-
-
-class SendToClientPackageChatMessage(object):
-
-    def __init__(self , fromid = 0, toid = 0, chatmsg = ''):
-
-        self.fromid = fromid
-        self.toid = toid
-        self.chatmsg = chatmsg
-
-    def reprJSON(self):
-
-        return dict(fromid = self.fromid , toid = self.toid, chatmsg = self.chatmsg)
-
-
-
-class SendToClientPackageOfflineChatMessage(object):
-
-    def __init__(self , fromid , toid, msg , senddate):
-
-        self.fromid = fromid
-        self.toid = toid
-        self.chatmsg = msg
-        self.senddate = senddate
-
-    def reprJSON(self):
-
-        return dict(
-            fromid = self.fromid,
-            toid = self.toid,
-            chatmsg = self.chatmsg,
-            senddate = self.senddate.strftime("%Y-%m-%d %H:%M:%S"),
-        )
-
-
-class SendToClientUserOnOffStatus(object):
+# 登录反馈
+class LoginReplyPackage(ReplyPackage):
     """
-    用户上线下线消息
+    {
+        "action"   : "reply",
+        "type"     : "login"
+        "status"   : 1
+        "message"  : ""
+        "end"      : "end"
+    }
     """
+    def __init__(self):
+        super(LoginReplyPackage, self).__init__()
 
-    def __init__(self , uid, username , sex , description , online):
+        self.type = 'login'
 
-        self.uid = uid
-        self.username = username
-        self.sex = sex
-        self.description = description
-        self.online = online
+# 获取好友列表反馈
+class GetRosterPackage(ReplyPackage):
+    """
+    {
+        "action"   : "reply",
+        "type"     : "getRoster"
+        "status"   : 1
+        "message" : ""
+        "end"      : "end"
+    }
+    """
+    def __init__(self):
+        super(GetRosterPackage, self).__init__()
 
+        self.type = 'getRoster'
 
-    def reprJSON(self):
+# 获取用户详细信息反馈
+class GetUserInfoPackage(ReplyPackage):
+    """
+    {
+        "action"   : "reply",
+        "type"     : "getUserInfo"
+        "status"   : 1
+        "message" : ""
+        "end"      : "end"
+    }
+    """
+    def __init__(self):
+        super(GetUserInfoPackage, self).__init__()
 
-        return dict(
-            uid = self.uid,
-            username = self.username,
-            sex = self.sex,
-            description = self.description,
-            online = self.online,
-        )
+        self.type = 'getUserInfo'
 
+# 下面这两个比较特殊，不是发给当前用户，而是发给对方用户
+# 对好友申请的反馈，应该反馈给被加的人
+class AddFriendRequestReplyPackage(ReplyPackage):
+    """
+    {
+        "action"     : "reply",
+        "type"       : "addFriendRequest"
+        "status"     : 1
+        "message"    : "加好友的附加消息"
+        "username"   : ""
+        "friendname" : ""
+        "end"        : "end"
+    }
+    """
+    def __init__(self):
+        super(AddFriendRequestReplyPackage, self).__init__()
 
-class SendToClientPackage(object):
+        self.username = ''            # 发起人的账号
+        self.friendname = ''          # 被加的人
+        self.status = None            # status在这里没有意义
 
-    def __init__(self , action):
+# 好友申请回应的反馈，应该反馈给发起好友申请的人
+class AddFriendResponseReplyPackage(ReplyPackage):
+    """
+    {
+        "action"     : "reply",
+        "type"       : "addFriendResponse"
+        "status"     : 1
+        "message"    : "回应的附加消息"
+        "username"   : ""
+        "friendname" : ""
+        "end"        : "end"
+    }
+    """
+    def __init__(self):
+        super(AddFriendResponseReplyPackage, self).__init__()
 
-        super(SendToClientPackage , self).__init__()
+        self.username = ''           # 申请的发起人
+        self.friendname = ''         # 回复的人
+        self.status = 0              # 是否同意用数字1和0表示，1表示同意，默认为0
 
-        self.status = 0
-        self.errcode = 0
-
-        self.obj = None
-        self.action = action
-
-    def reprJSON(self):
-        return dict(datas = self.obj, action = self.action , status = self.status, errcode = self.errcode)
- 

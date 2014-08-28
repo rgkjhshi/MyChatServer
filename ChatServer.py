@@ -36,6 +36,7 @@ __author__ = 'Michael King'
 from tornado.tcpserver import TCPServer
 from tornado.ioloop  import IOLoop
 
+import db
 from Router import Router
 ######################################################################
 # 连接 
@@ -117,6 +118,7 @@ class ChatServer(TCPServer):
 ######################################################################
 if __name__ == '__main__':
     print "ChatServer start ..."
+    db.create_engine('root', 'root', 'shisong')     # 数据库连接，其上下文对象时线程独立的
     server = ChatServer()
     server.bind(8000)
     server.start(1)

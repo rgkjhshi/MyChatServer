@@ -35,6 +35,7 @@ __author__ = 'Michael King'
 
 
 from Package import *
+import db
 
 class Handler(object):
 
@@ -43,3 +44,49 @@ class Handler(object):
 
         self._connection = connection
 
+    # 反馈包，直接发出去
+    def replyHandler(self, package):
+        pass
+
+    # 加好友的反馈特殊处理
+    def addFriendRequestReplyHandler(self, package):
+        pass
+
+    def addFriendResponseReplyHandler(self, package):
+        pass
+
+    # 普通包，处理
+    def registerHandler(self, package):
+        pass
+
+    def loginHandler(self, package):
+        username = package.username
+        password = package.password
+        sql = "select * from ofUser where username=? and password=? "
+        res = db.select_one(sql, username, password)
+        reply = LoginReplyPackage()
+        if res is None :
+            reply.status = 0
+
+        self._connection.send_message(str(reply))
+
+    def addFriendRequestHandler(self, package):
+        pass
+
+    def addFriendResponseHandler(self, package):
+        pass
+
+    def deleteFriendHandler(self, package):
+        pass
+
+    def getRosterHandler(self, package):
+        pass
+
+    def getUserInfoHandler(self, package):
+        pass
+
+    def chatMessageHandler(self, package):
+        pass
+
+    def errorHandler(self, package):
+        pass

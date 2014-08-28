@@ -44,15 +44,9 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))  
 data = """
     {
-        "action"   : "regisger",
-        "username" : "tom@126.com",
-        "password" : "********",
-        "end"      : "end"
-    }
-    {
-        "action"   : "regisger",
-        "username" : "tom@126.com",
-        "password" : "********",
+        "action"   : "login",
+        "username" : "313832830@qq.com",
+        "password" : "shisong",
         "end"      : "end"
     }
     """

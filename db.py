@@ -130,6 +130,7 @@ class _DbCtx(threading.local):
 _db_ctx = _DbCtx()
 
 # global engine object:
+# engine 本身就是
 engine = None
 
 # 类定义
