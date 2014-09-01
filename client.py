@@ -33,46 +33,51 @@
 
 __author__ = 'Michael King'
 
-import json
-from Package import *
-
-####################################################################################
-#协议解析
-####################################################################################
-class Protocol(object):
-
-    def __init__(self , callback):
-        super(Protocol , self).__init__()
-
-        self._decode_callback = callback
-
-    @staticmethod
-    def checkPackage(data):
-
-        json_data = json.loads(data)
-
-        protocol = {
-                    'regisger'         :    RegisterPackage ,
-                    'login'            :    LoginPackage,
-                    'addfriendrequest' :    AddFriendRequestPackage,
-                    'deletefriend'     :    DeleteFriendPackage,
-                    'getroster'        :    GetRosterPackage,
-                    'getuserinfo'      :    GetUserInfoPackage,
-                    'chatmessage'      :    ChatMessagePackage,
-                    
-                    'addfriendstatus'  :    AddFriendStatusPackage,
-                    'error'            :    ErrorPackage,
-        }
-
-        action = json_data.get('action', "error")
-        # 组包
-        pack = protocol[action]()
-        pack.parser(json_data)
-        return pack
+import socket
+import time
 
 
-    # 解析函数
-    def decode(self, data):
-        package = Protocol.checkPackage(data)
-        self._decode_callback(package)
-        
+HOST = '127.0.0.1'    # The remote host
+PORT = 8000           # The same port as used by the server
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+s.connect((HOST, PORT))
+
+offlineMessage = """
+    {
+        "action"   : "chatmessage",
+        "fromID"   : "test01@qq.com",
+        "toID"     : "313832830@qq.com",
+        "message"  : "哈哈哈哈大侠啊谁来的快放假啊；士大夫",
+        "end"      : "end"
+    }
+    """
+register = """
+    {
+        "action"   : "register",
+        "username" : "test01@qq.com",
+        "password" : "shisong",
+        "name"     : "石松",
+        "gender"   : 0,
+        "end"      : "end"
+    }
+    """
+login = """
+    {
+        "action"   : "login",
+        "username" : "313832830@qq.com",
+        "password" : "shisong",
+        "end"      : "end"
+    }
+    """
+data2='''{"action" : "regisger", "username" : "test01@qq.com", "password" : "shisong", "name" : "石松", "gender" : 0, "end" : "end"}'''
+
+
+s.sendall(login)
+print 'send:', login
+time.sleep(1)  
+data = s.recv(1024)
+print 'Received', data # repr(data)
+
+time.sleep(1)  
+s.close()  

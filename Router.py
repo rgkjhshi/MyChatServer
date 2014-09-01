@@ -35,38 +35,10 @@ __author__ = 'Michael King'
 
 
 import json
-from Package import *
-from Handle import Handler
+from package import *
+from handle import Handler
 
 class Router(object):
-
-    ####################################################################################
-    # 对愿数据进行解码
-    ####################################################################################
-    @staticmethod
-    def decodePackage(data):
-
-        json_data = json.loads(data)
-
-        protocol = {
-                    'regisger'         :    RegisterPackage ,
-                    'login'            :    LoginPackage,
-                    'addfriendRequest' :    AddFriendRequestPackage,
-                    'addfriendResponse':    AddFriendResponsePackage,
-                    'deletefriend'     :    DeleteFriendPackage,
-                    'getroster'        :    GetRosterPackage,
-                    'getuserinfo'      :    GetUserInfoPackage,
-                    'chatmessage'      :    ChatMessagePackage,
-                    
-                    'reply'            :    ReplyPackage,
-                    'error'            :    ErrorPackage,
-        }
-
-        action = json_data.get('action', "error")
-        # 组包
-        pack = protocol[action]()
-        pack.parser(json_data)
-        return pack
 
     ####################################################################################
     # 包的分发路由表

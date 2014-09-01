@@ -46,6 +46,34 @@ class Package(object):
         self.action = ''
         self.end = 'end'
 
+    # 对原数据进行解码
+    @staticmethod
+    def decodePackage(json_data):
+        print "in decode:", type(json_data)
+        print json_data
+        dict_datas = json.loads(json_data)
+
+        protocol = {
+                    'register'         :    RegisterPackage,
+                    'login'            :    LoginPackage,
+                    'addfriendRequest' :    AddFriendRequestPackage,
+                    'addfriendResponse':    AddFriendResponsePackage,
+                    'deletefriend'     :    DeleteFriendPackage,
+                    'getroster'        :    GetRosterPackage,
+                    'getuserinfo'      :    GetUserInfoPackage,
+                    'chatmessage'      :    ChatMessagePackage,
+                    
+                    'reply'            :    ReplyPackage,
+                    'error'            :    ErrorPackage,
+        }
+
+        action = dict_datas.get('action', "error")
+        # 组包
+        pack = protocol[action]()
+        pack.parser(dict_datas)
+        return pack
+
+    # 将字典类型的数据datas里的属性放到Package对应的属性中去
     def parser(self, datas):
         for (k , v) in datas.items():                                        # datas里的属性
             try:
@@ -65,7 +93,8 @@ class RegisterPackage(Package):
         "action"   : "regisger",
         "username" : "tom@126.com",
         "password" : "********",
-        ...
+        “name”     : "",
+        "gender"   : 0,
         "end"      : "end"
     }
     """
@@ -74,6 +103,8 @@ class RegisterPackage(Package):
 
         self.username = ''
         self.password = ''
+        self.name = ''
+        self.gender = 0
 
 # 登录
 class LoginPackage(Package):
@@ -179,8 +210,8 @@ class ChatMessagePackage(Package):
     """
     {
         "action"     : "chatmessage",
-        "fromuser"       : "michael@126.com",
-        "touser"         : "tom@126.com",
+        "fromID"     : "michael@126.com",
+        "toID"       : "tom@126.com",
         "message"    : "hello",
         "end"        : "end"
     }
@@ -188,20 +219,39 @@ class ChatMessagePackage(Package):
     def __init__(self):
         super (ChatMessagePackage , self).__init__()
 
-        self.fromuser = ''
-        self.touser = ''
+        self.fromID  = ''
+        self.toID    = ''
         self.message = ''
+
+    # 用于将ReplyPackage对象转化成Json串，子类若有扩展字段，需要覆盖本方法
+    def reprJSON(self):
+        return dict(
+            action = 'chatmessage',
+            fromID = self.fromID,
+            toID   = self.toID,
+            message = self.message,
+            end = 'end'
+        )
 
 
 ####################################################################################
 # 应答包协议
 ####################################################################################
+
+# json.dumps(replyPackage , cls= ComplexEncoder) 这样可转化为json串
+class ComplexEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj,'reprJSON'):
+            return obj.reprJSON()
+        else:
+            return json.JSONEncoder.default(self, obj)
+
+
 # 错误
 class ErrorPackage(Package):
     """
     {
         "action"   : "error",
-        "username" : "tom@126.com",
         "message"  : "404:not found"
         "end"      : "end"
     }
@@ -209,9 +259,15 @@ class ErrorPackage(Package):
     def __init__(self):
         super(ErrorPackage, self).__init__()
 
-        self.username = ''
         self.message  = ''
 
+    # 用于将ReplyPackage对象转化成Json串，子类若有扩展字段，需要覆盖本方法
+    def reprJSON(self):
+        return dict(
+            action = 'error',
+            message = self.message,
+            end = 'end'
+        )
 
 # 所有需要回应的包的父类
 class ReplyPackage(Package):
@@ -232,6 +288,16 @@ class ReplyPackage(Package):
         self.type = ''
         self.status = 1    # 所有应答包，数字1表示正确，0表示错误，默认为1
         self.message = ''
+
+    # 用于将ReplyPackage对象转化成Json串，子类若有扩展字段，需要覆盖本方法
+    def reprJSON(self):
+        return dict(
+            action = self.action,
+            type = self.type,
+            status = self.status,
+            message = self.message,
+            end = "end"
+        )
 
 
 # 注册反馈
@@ -315,9 +381,22 @@ class AddFriendRequestReplyPackage(ReplyPackage):
     def __init__(self):
         super(AddFriendRequestReplyPackage, self).__init__()
 
+        self.type = 'addFriendRequest'
         self.username = ''            # 发起人的账号
         self.friendname = ''          # 被加的人
         self.status = None            # status在这里没有意义
+
+    # 用于将ReplyPackage对象转化成Json串
+    def reprJSON(self):
+        return dict(
+            action = self.action,
+            type = self.type,
+            status = self.status,
+            message = self.message,
+            username = self.username,
+            friendname = self.friendname,
+            end = "end"
+        )
 
 # 好友申请回应的反馈，应该反馈给发起好友申请的人
 class AddFriendResponseReplyPackage(ReplyPackage):
@@ -335,7 +414,20 @@ class AddFriendResponseReplyPackage(ReplyPackage):
     def __init__(self):
         super(AddFriendResponseReplyPackage, self).__init__()
 
+        self.type = 'addFriendResponse'
         self.username = ''           # 申请的发起人
         self.friendname = ''         # 回复的人
         self.status = 0              # 是否同意用数字1和0表示，1表示同意，默认为0
+
+    # 用于将ReplyPackage对象转化成Json串
+    def reprJSON(self):
+        return dict(
+            action = self.action,
+            type = self.type,
+            status = self.status,
+            message = self.message,
+            username = self.username,
+            friendname = self.friendname,
+            end = "end"
+        )
 
